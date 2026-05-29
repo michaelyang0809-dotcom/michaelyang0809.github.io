@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isRegistered() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "michaelyang0809@gmail.com" ||
+        (isRegistered() && getUserData().role == "admin")
+      );
+    }
+
+    function isTeacher() {
+      return isSignedIn() && (
+        isAdmin() ||
+        (isRegistered() && getUserData().role == "teacher")
+      );
+    }
+
+    function isParentOf(studentId) {
+      return isSignedIn() && (
+        isAdmin() ||
+        isTeacher() ||
+        (isRegistered() && 
+         getUserData().role == "parent" && 
+         getUserData().assignedStudentId == studentId)
+      );
+    }
+
+    function isStudentWithId(studentId) {
+      return isSignedIn() && (
+        isAdmin() ||
+        isTeacher() ||
+        (isRegistered() && 
+         getUserData().role == "student" && 
+         getUserData().assignedStudentId == studentId)
+      );
+    }
+
+    function canAccessStudent(studentId) {
+      return isAdmin() || isTeacher() || isParentOf(studentId) || isStudentWithId(studentId);
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. Users collection rules
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (
+        isAdmin() || (
+          request.auth.uid == userId && 
+          request.resource.data.role == (resource == null ? null : resource.data.role) &&
+          request.resource.data.assignedStudentId == (resource == null ? null : resource.data.assignedStudentId)
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 2. Students collection rules
+    match /students/{studentId} {
+      allow read: if isSignedIn() && canAccessStudent(studentId);
+      allow create: if isAdmin() || isTeacher();
+      allow update: if isAdmin() || isTeacher();
+      allow delete: if isAdmin();
+    }
+
+    // 3. Progress Records collection rules
+    match /records/{recordId} {
+      allow read: if isSignedIn() && (
+        isAdmin() || 
+        isTeacher() || 
+        canAccessStudent(resource.data.studentId)
+      );
+      allow create: if isAdmin() || isTeacher();
+      allow update: if isAdmin() || isTeacher();
+      allow delete: if isAdmin() || isTeacher();
+    }
+
+    // 4. Error Questions collection rules
+    match /errors/{errorId} {
+      allow read: if isSignedIn() && (
+        isAdmin() || 
+        isTeacher() || 
+        canAccessStudent(resource.data.studentId)
+      );
+      allow create: if isAdmin() || isTeacher() || (
+        isSignedIn() && 
+        isStudentWithId(request.resource.data.studentId)
+      );
+      allow update: if isAdmin() || isTeacher() || (
+        isSignedIn() && 
+        isStudentWithId(resource.data.studentId) && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"])
+      );
+      allow delete: if isAdmin() || isTeacher();
+    }
+
+    // 5. Parent Comments collection rules
+    match /comments/{commentId} {
+      allow read: if isSignedIn() && (
+        isAdmin() || 
+        isTeacher() || 
+        canAccessStudent(resource.data.studentId)
+      );
+      allow create: if isSignedIn() && (
+        isAdmin() || 
+        isTeacher() || 
+        (isRegistered() && getUserData().role == "parent" && request.resource.data.parentId == request.auth.uid)
+      );
+      allow update, delete: if isAdmin() || isTeacher() || (
+        resource.data.parentId == request.auth.uid
+      );
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "學生進度量化管理系統",
+  "description": "協助家教老師、家長、學生管理與查看學習進度、錯題、以及長期量化數據分析的統整平台。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

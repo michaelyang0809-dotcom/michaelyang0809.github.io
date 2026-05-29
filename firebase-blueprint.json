@@ -1,0 +1,111 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with role-based access control and associated student linking.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique user authentication ID." },
+        "email": { "type": "string", "description": "Email address of the user." },
+        "displayName": { "type": "string", "description": "Display name of the user." },
+        "photoURL": { "type": "string", "description": "Photo URL of the user avatar." },
+        "role": { "type": "string", "enum": ["admin", "teacher", "parent", "student", null], "description": "Assigned platform role." },
+        "assignedStudentId": { "type": "string", "description": "Associated student ID for parent or student role access." }
+      },
+      "required": ["uid", "email"]
+    },
+    "Student": {
+      "title": "Student Info",
+      "description": "Student academic profiles with strength radar skills.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique student identifier." },
+        "name": { "type": "string", "description": "Name of the student." },
+        "grade": { "type": "string", "description": "Current school grade." },
+        "subject": { "type": "string", "description": "Tutoring subject." },
+        "examDate": { "type": "string", "description": "Next exam date." },
+        "parentName": { "type": "string", "description": "Name of primary parent." },
+        "parentPhone": { "type": "string", "description": "Contact number." },
+        "avatarSeed": { "type": "string", "description": "Seed for avatar styling." },
+        "radarSkills": {
+          "type": "object",
+          "description": "Performance levels across several mathematics modules."
+        }
+      },
+      "required": ["id", "name", "grade", "subject", "radarSkills"]
+    },
+    "ProgressRecord": {
+      "title": "Progress Record",
+      "description": "Records tracking individual class lesson scores, notes, and homework checklist completion.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique log record identifier." },
+        "studentId": { "type": "string", "description": "Linked Student ID." },
+        "date": { "type": "string", "description": "Session date." },
+        "title": { "type": "string", "description": "Session title or context." },
+        "accuracyRate": { "type": "integer", "description": "Quiz accuracy rate (percentage)." },
+        "totalQuestions": { "type": "integer", "description": "Total count of evaluation questions." },
+        "correctCount": { "type": "integer", "description": "Quantity of correct answers." },
+        "weakUnits": { "type": "array", "description": "Identified weak units." },
+        "reportSent": { "type": "boolean", "description": "Whether the summary report was dispatched." },
+        "notes": { "type": "string", "description": "Comments or study advisor remarks." },
+        "homeworkStatus": { "type": "string", "description": "Homework completion status." }
+      },
+      "required": ["id", "studentId", "date", "title", "accuracyRate", "totalQuestions", "correctCount", "homeworkStatus"]
+    },
+    "ErrorQuestion": {
+      "title": "Error Question",
+      "description": "Individual incorrect items automatically or manually filed in the wrong question bank.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique incorrect problem identifier." },
+        "studentId": { "type": "string", "description": "Linked Student ID." },
+        "date": { "type": "string", "description": "Encounter date." },
+        "subject": { "type": "string", "description": "Curriculum topic." },
+        "unit": { "type": "string", "description": "Weak unit category identifier." },
+        "questionText": { "type": "string", "description": "Text, geometry formulation, or equations of the question." },
+        "wrongAnswer": { "type": "string", "description": "Answer selected by the student." },
+        "correctAnswer": { "type": "string", "description": "Validated standard response." },
+        "status": { "type": "string", "enum": ["PENDING", "MASTERED"], "description": "Review state status." },
+        "difficulty": { "type": "string", "enum": ["EASY", "MEDIUM", "HARD"], "description": "Intensity level." }
+      },
+      "required": ["id", "studentId", "date", "subject", "unit", "questionText", "wrongAnswer", "correctAnswer", "status"]
+    },
+    "ParentComment": {
+      "title": "Parent Comment",
+      "description": "Feed of letters, acknowledgments, or inquiries sent by associated parents.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Message ID." },
+        "studentId": { "type": "string", "description": "Linked student ID." },
+        "parentId": { "type": "string", "description": "Author user UID." },
+        "date": { "type": "string", "description": "Dispatch date." },
+        "content": { "type": "string", "description": "Body description comment text." },
+        "parentName": { "type": "string", "description": "Author display name." }
+      },
+      "required": ["id", "studentId", "parentId", "date", "content", "parentName"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user auth profile accounts with platform-assigned roles."
+    },
+    "students/{studentId}": {
+      "schema": "Student",
+      "description": "Academic files of active direct tutees."
+    },
+    "records/{recordId}": {
+      "schema": "ProgressRecord",
+      "description": "Quiz score entries and lesson evaluation reports."
+    },
+    "errors/{errorId}": {
+      "schema": "ErrorQuestion",
+      "description": "Incorrect mathematical problems logs used for interactive testing."
+    },
+    "comments/{commentId}": {
+      "schema": "ParentComment",
+      "description": "Public communications submitted by student guardians."
+    }
+  }
+}
